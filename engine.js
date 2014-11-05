@@ -69,6 +69,8 @@ ShaderProgram.prototype.setUniform = function(name, val)
   {
     return loc;
   }
+  if(val.length)
+  {
   switch(val.length)
   {
   case 1:
@@ -98,6 +100,11 @@ ShaderProgram.prototype.setUniform = function(name, val)
   default:
     throw "not a datatype";
     break;
+  }
+  }
+  else
+  {
+    this.gl.uniform1i(loc, val);
   }
   return loc;
 }

@@ -42,7 +42,7 @@ function main()
     var kdiff = new UniformVariable(shader, "material.mKDiff");
     kdiff.setValue(vec3.clone(material.diffuseReflectance));
     var kspec = new UniformVariable(shader, "material.mKSpec");
-    console.log(material.specularReflectance);
+
     //kspec.setValue(vec3.clone(material.specularReflectance));
     kspec.setValue([1,1,1]);
     var kambient = new UniformVariable(shader, "material.mKAmbient");
@@ -50,6 +50,10 @@ function main()
     var kshininess = new UniformVariable(shader, "material.mShininess");
     kshininess.setValue([material.shininess]);
     
+    var diffusemap = new UniformVariable(shader, "diffusemap");
+    diffusemap.setValue(1);
+      
+  
     if(material.diffuseTexture[0] != "")
     {
       var name = "./Crytek/models/" + material.diffuseTexture[0]; 
@@ -74,7 +78,10 @@ function main()
     subnode.addAsset(kspec);
     subnode.addAsset(kambient);
     subnode.addAsset(kshininess);
+    subnode.addAsset(diffusemap);
     subnode.addDrawInterface(new DrawVertexBufferObject(vbo, "modelMat", "normalMat"));
+
+  
     modelRootNode.addChild(subnode);
   } 
   //modelRootNode.scale([0.1,0.1,0.1]);
@@ -88,13 +95,81 @@ function main()
 
   // set global shader properties
   shader.setUniform("projMat", projection_matrix); 
-  shader.setUniform("light1.mI0", [1,1,1]);
-  shader.setUniform("light1.mPosition", [-1000,1000,300]);
-  shader.setUniform("light1.mQuadraticAttenuation", [0.01]);
-  shader.setUniform("light2.mI0", [1,1,1]);
-  shader.setUniform("light2.mPosition", [1000,700, 0]);
-  shader.setUniform("light2.mQuadraticAttenuation", [0.01]);
-  shader.setUniform("ambientLight", [0,0,0]);
+  shader.setUniform("light[0].mI0", [1,1,1]);
+  shader.setUniform("light[0].mPosition", [0,100,0]);
+  shader.setUniform("light[0].mQuadraticAttenuation", [0.01]);
+  shader.setUniform("light[0].mEnabled", 1); 
+  shader.setUniform("light[1].mI0", [1,1,1]);
+  shader.setUniform("light[1].mPosition", [1000,700, -200]);
+  shader.setUniform("light[1].mQuadraticAttenuation", [0.01]);
+  shader.setUniform("light[1].mEnabled", 1);
+  shader.setUniform("light[2].mI0", [0,1,0]);
+  shader.setUniform("light[2].mPosition", [500,500,0]);
+  shader.setUniform("light[2].mQuadraticAttenuation", [0.01]);
+  shader.setUniform("light[2].mEnabled", 1);
+  shader.setUniform("light[3].mI0", [1,0,1]);
+  shader.setUniform("light[3].mPosition", [1000,700,350]);
+  shader.setUniform("light[3].mQuadraticAttenuation", [0.01]);
+  shader.setUniform("light[3].mEnabled", 1);
+  shader.setUniform("light[4].mI0", [0,0,1]);
+  shader.setUniform("light[4].mPosition", [-1000,700,-350]);
+  shader.setUniform("light[4].mQuadraticAttenuation", [0.01]);
+  shader.setUniform("light[4].mEnabled", 1);
+ 
+  shader.setUniform("ambientLight", [0,0,0]); 
+  
+  var sphere_mesh = new Sphere(10,20,20,1);
+  var sphere_vbo = new VertexBufferObject(shader);
+  sphere_vbo.addAttributeArray("position", sphere_mesh.mPosition, 3);
+  sphere_vbo.addAttributeArray("normal", sphere_mesh.mNormal, 3);
+  sphere_vbo.addAttributeArray("texcoords", sphere_mesh.mTex, 2);
+  sphere_vbo.setIndices(sphere_mesh.mIndex);
+  var diffusemap = new UniformVariable(shader, "diffusemap");
+  diffusemap.setValue(0);
+  var kdiff = new UniformVariable(shader, "material.mKDiff");
+  kdiff.setValue([1,1,1]);
+
+  var light_node1 = new Node();
+  light_node1.translate([0,100,0]);
+  light_node1.addDrawInterface(new DrawVertexBufferObject(sphere_vbo, "modelMat", "normalMat"));
+  light_node1.addAsset(diffusemap);
+  light_node1.addAsset(kdiff);
+  engine.addNode(light_node1);
+
+  var light_node2 = new Node();
+  light_node2.translate([1000,700,-200]);
+  light_node2.addDrawInterface(new DrawVertexBufferObject(sphere_vbo, "modelMat", "normalMat"));
+  light_node2.addAsset(diffusemap);
+  light_node2.addAsset(kdiff);
+  engine.addNode(light_node2);
+
+  var light_node3 = new Node();
+  light_node3.translate([500,500,0]);
+  light_node3.addDrawInterface(new DrawVertexBufferObject(sphere_vbo, "modelMat", "normalMat"));
+  light_node3.addAsset(diffusemap);
+  light_node3.addAsset(kdiff);
+  engine.addNode(light_node3);
+
+  var light_node4 = new Node();
+  light_node4.translate([1000,700,350]);
+  light_node4.addDrawInterface(new DrawVertexBufferObject(sphere_vbo, "modelMat", "normalMat"));
+  light_node4.addAsset(diffusemap);
+  light_node4.addAsset(kdiff);
+  engine.addNode(light_node4);
+
+  var light_node5 = new Node();
+  light_node5.translate([-1000,700,-350]);
+  light_node5.addDrawInterface(new DrawVertexBufferObject(sphere_vbo, "modelMat", "normalMat"));
+  light_node5.addAsset(diffusemap);
+  light_node5.addAsset(kdiff);
+  engine.addNode(light_node5);
+
+
+  var ary = {};
+  if(ary.length)
+  {
+    console.log("arraay\n");
+  } 
 
 
   /// BEWARE EVERYTHING BELOW HERE IS A HACK
@@ -121,6 +196,7 @@ function main()
     var normalizedMouseLoc = vec4.create();
     vec4.normalize(normalizedMouseLoc, mouseLoc); 
 
+    //var matrix = camera.getMatrix();
     var matrix = mat4.create();
     mat4.invert(matrix, camera.getMatrix());
     vec4.transformMat4(normalizedMouseLoc, normalizedMouseLoc, matrix);

@@ -89,7 +89,7 @@ ModelMesh<SimpleVertex>* Primitives::MakeSphere(float r, int vsects, int hsects)
 }
 */
 
-function Sphere(r, h, v)
+function Sphere(r, h, v, inv)
 {
   
   var thetaStep = Math.PI / (h + 1);
@@ -103,7 +103,14 @@ function Sphere(r, h, v)
   this.mIndex = [];
 
   position.push([0,0,r]);
-  normal.push([0,0,1]);
+  if(inv)
+  {
+    normal.push([0,0,-1]);
+  }
+  else
+  {
+    normal.push([0,0,1]);
+  }
   tex.push([0,0,1]);
   
   for(var i = 0; i < h; i++)
@@ -117,6 +124,10 @@ function Sphere(r, h, v)
       var pos = [x,y,z];
       var norm = [0,0,0];
       vec3.normalize(norm, pos);
+      if(inv)
+      {
+        vec3.scale(norm, norm, -1);
+      }
       position.push(pos);
       normal.push(norm);
       tex.push(norm);
@@ -125,7 +136,14 @@ function Sphere(r, h, v)
   }
 
   position.push([0,0,-r]);
-  normal.push([0,0,-1]);
+  if(inv)
+  {
+    normal.push([0,0,1])
+  }
+  else
+  {
+    normal.push([0,0,-1]);
+  }
   tex.push([0,0,-1]);
 
   for(var i = 2; i < v+1; i++)
@@ -177,7 +195,7 @@ function Sphere(r, h, v)
     {
       this.mPosition.push(position[i][j]);
       this.mNormal.push(normal[i][j]);
-      //this.mTex.push(tex[i][j]);
+      this.mTex.push(tex[i][j]);
 
     }
   }

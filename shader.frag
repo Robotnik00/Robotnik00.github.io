@@ -18,6 +18,7 @@ struct Light
   vec3 mI0;
   vec3 mPosition;
   float mQuadraticAttenuation;
+  int mEnabled;
 };
 
 uniform Material material;
@@ -26,21 +27,33 @@ uniform Light light2;
 uniform vec3 viewPosition;
 uniform vec3 ambientLight;
 
+
+
+uniform Light light[8];
+uniform int diffusemap;
+
+
 uniform sampler2D uSampler;
 
-vec3 calculateDiffuseLighting(Material mat, Light light, 
-                              vec3 lightDirection, vec3 normal, float attenuation)
-{
-  vec3 IDiff = light.mI0 * mat.mKDiff * clamp(dot(normal, lightDirection), 0.0,1.0) / attenuation;
+vec3 calculateDiffuseLighting(Material mat, Light light)
+{ 
+  float distance = length(light.mPosition - fposition);
+  float attenuation = light.mQuadraticAttenuation * distance;
+
+
+  vec3 lightDir = normalize(light.mPosition - fposition);
+  vec3 IDiff = light.mI0 * mat.mKDiff * clamp(dot(fnormal, lightDir), 0.0,1.0) / (attenuation+1.0);
   return IDiff; 
 }
 
 vec3 calculateSpecularLighting(Material mat, Light light, 
-                               vec3 normal, vec3 lightDirection, vec3 viewDirection, float attenuation)
+                               vec3 viewDirection) 
 {
-  vec3 ISpec = light.mI0 * mat.mKSpec * pow(clamp(dot(reflect(-lightDirection, normal), viewDirection),0.0,1.0), mat.mShininess) / attenuation; 
+  float distance = length(light.mPosition - fposition);
+  float attenuation = light.mQuadraticAttenuation * distance;
 
-
+  vec3 lightDir = normalize(light.mPosition - fposition);
+  vec3 ISpec = light.mI0 * mat.mKSpec * pow(clamp(dot(reflect(-lightDir, fnormal), viewDirection),0.0,1.0), mat.mShininess) / (attenuation+1.0); 
 
   return ISpec;
 }
@@ -49,33 +62,30 @@ void main()
 {
   vec3 texcolor = texture2D(uSampler, ftexcoords).xyz; 
   Material mat = material;
-  mat.mKDiff = texcolor;
+  if(diffusemap == 1)
+  {
+    mat.mKDiff = texcolor;
+  }
 
-  vec3 lightDirection1 = normalize(light1.mPosition - fposition);
-  float distance1 = length(light1.mPosition - fposition);
-  float attenuation1 = light1.mQuadraticAttenuation * distance1;
-//  float attenuation1 = 1.0; 
-
-
-  vec3 lightDirection2 = normalize(light2.mPosition - fposition);
-  float distance2 = length(light2.mPosition - fposition);
-  float attenuation2 = light2.mQuadraticAttenuation * distance2;
-//  float attenuation2 = 1.0;
   vec3 viewDirection = normalize(viewPosition - fposition);
    
+  vec3 IDiff = vec3(0.0);
+  vec3 ISpec = vec3(0.0); 
 
-  vec3 IDiff1 = calculateDiffuseLighting(mat, light1, lightDirection1, fnormal, attenuation1);
 
-  vec3  ISpec1 = calculateSpecularLighting(mat, light1, fnormal, lightDirection1, viewDirection, attenuation1); 
-
-  vec3 IDiff2 = calculateDiffuseLighting(mat, light2, lightDirection2, fnormal, attenuation2);
-
-  vec3  ISpec2 = calculateSpecularLighting(mat, light2, fnormal, lightDirection2, viewDirection, attenuation2); 
+  for(int i = 0; i < 8; i++)
+  {
+    if(light[i].mEnabled == 1)
+    {
+      IDiff += calculateDiffuseLighting(mat, light[i]); 
+      ISpec += calculateSpecularLighting(mat, light[i], viewDirection);
+    }
+  }
 
  
   vec3 IAmbient = ambientLight * material.mKAmbient; 
  
 
   
-  gl_FragColor = vec4(IAmbient + IDiff1 + ISpec1 + IDiff2 + ISpec2,1);
+  gl_FragColor = vec4(IDiff + ISpec + IAmbient, 1.0);
 }
